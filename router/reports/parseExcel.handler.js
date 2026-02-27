@@ -1,7 +1,6 @@
 import path from "node:path";
 import xlsx from "xlsx";
 import formidable from "formidable";
-// import db from "#root/db.js";
 
 /**
  * Читает Excel файл отчетов и возвращает его в формате JSON
