@@ -4,6 +4,7 @@ import packageJson from "./package.json" with { type: "json" };
 import { ctxAsyncLocalStorage } from "./context.js";
 import db from "./db.js";
 import response from "./response.js";
+import request from "./request.js";
 
 const SERVER_PORT = 3001;
 
@@ -15,7 +16,8 @@ http
       const url = new URL(`http://localhost:${SERVER_PORT}${req.url}`);
 
       /** @type {HTTPContext} */
-      const ctx = { data: null, req, res: Object.create(response) };
+      const ctx = { data: null, req: Object.create(request), res: Object.create(response) };
+      ctx.req.req = req;
       ctx.res.res = res;
 
       ctxAsyncLocalStorage.run(ctx, () => routeHandler(url));
@@ -23,6 +25,6 @@ http
       console.error(error);
     }
   })
-  .listen(3001, () => {
+  .listen(SERVER_PORT, () => {
     console.log(`Service ${packageJson.name} is running at port ${SERVER_PORT}.`);
   });

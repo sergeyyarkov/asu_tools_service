@@ -11,8 +11,13 @@ declare global {
     executorNames: string;
   };
 
+  type HTTPRequest = {
+    parseJson: () => Promise<any>;
+    req: http.IncomingMessage | null;
+  };
+
   type HTTPResponse = {
-    sendJson: (data: any, statusCode?: number = 200) => http.ServerResponse;
+    sendJson: (data: Record<string, unknown>, statusCode?: number = 200) => http.ServerResponse;
     sendText: (text: string, statusCode?: number = 200) => http.ServerResponse;
     res: http.ServerResponse | null;
   };
@@ -20,5 +25,5 @@ declare global {
   type HTTPRoute = { method: "POST" | "GET"; handle: HTTPRouteHandler };
   type HTTPRouteHandler = (ctx: HTTPContext) => Promise<void>;
   type HTTPRouteMap = Record<string, HTTPRoute>;
-  type HTTPContext = { data: any; req: http.IncomingMessage; res: HTTPResponse };
+  type HTTPContext = { data: any; res: HTTPResponse; req: HTTPRequest };
 }

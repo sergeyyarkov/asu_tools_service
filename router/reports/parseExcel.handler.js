@@ -1,14 +1,15 @@
 import path from "node:path";
 import xlsx from "xlsx";
 import formidable from "formidable";
-import db from "#root/db.js";
+// import db from "#root/db.js";
 
 /**
  * Читает Excel файл отчетов и возвращает его в формате JSON
  *
  * @type {HTTPRouteHandler}
  */
-export default async ({ req, res }) => {
+export default async (ctx) => {
+  const { req, res } = ctx;
   const sheetName = "Отчеты";
 
   /** @type {{ markedReports: ReportModel[], reports: ReportModel[] }} */
@@ -32,7 +33,7 @@ export default async ({ req, res }) => {
     filter: ({ mimetype }) => mimetype && mimetype.includes("application/vnd.ms-excel"),
   });
 
-  const [, files] = await form.parse(req);
+  const [, files] = await form.parse(req.req);
   const excelFilePath = files?.report?.at(0)?.filepath;
 
   if (excelFilePath) {
