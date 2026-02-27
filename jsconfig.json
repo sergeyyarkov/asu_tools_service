@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "checkJs": true,
+		"lib": ["ESNext"],
+    "module": "nodenext",
+    "resolveJsonModule": true,
+    "paths": {
+      "#root/*": ["./*"]
+    }
+  }  
+}
