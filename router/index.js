@@ -1,6 +1,6 @@
 import { ctxAsyncLocalStorage } from "#root/context.js";
-import handleExcelReportsFileParse from "./reportsFileParse.handler.js";
-import handleReportsSyncParsed from "./reportsSyncParsed.handler.js";
+import handleExcelReportsFileParse from "./reports/parseExcel.handler.js";
+import handleReportsSyncParsed from "./reports/syncParsed.handler.js";
 
 /**
  * @type {HTTPRouteMap}
@@ -24,17 +24,27 @@ export async function routeHandler(url) {
   const ctx = ctxAsyncLocalStorage.getStore();
   const { req, res } = ctx;
 
-  if (url.pathname in ROUTE_MAP) {
-    if (req.headers["content-type"] === "application/json") {
-      ctx.data = await getJsonData();
+  try {
+    if (url.pathname in ROUTE_MAP) {
+      const route = ROUTE_MAP[url.pathname];
+      if (req.headers["content-type"] === "application/json") ctx.data = await getJsonData();
+      if (route.method === req.method) await route.handle(ctx);
+      return;
     }
 
-    const route = ROUTE_MAP[url.pathname];
-    if (route.method === req.method) route.handle(ctx);
-    return;
+    res.sendText("Указанный URL не имеет обработчика.", 200);
+  } catch (error) {
+    console.error(error);
+    res.sendJson(
+      {
+        error: {
+          message: error?.message || "Internal Server Error",
+          stack: error?.stack || null,
+        },
+      },
+      error?.cause?.statusCode || 500,
+    );
   }
-
-  res.sendText("Указанный URL не имеет обработчика.", 200);
 }
 
 function getJsonData() {
@@ -49,4 +59,4 @@ function getJsonData() {
   });
 }
 
-export * from "./reportsFileParse.handler.js";
+export * from "./reports/parseExcel.handler.js";
