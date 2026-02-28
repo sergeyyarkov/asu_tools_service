@@ -15,5 +15,5 @@ export default {
       });
       this.req.on("error", (err) => reject(err));
     });
-  },
+  }
 };

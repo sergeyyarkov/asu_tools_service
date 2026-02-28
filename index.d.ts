@@ -1,4 +1,5 @@
 import type http from "node:http";
+import type IncomingForm from "formidable/Formidable.js";
 
 declare global {
   type ReportModel = {
@@ -13,16 +14,16 @@ declare global {
 
   type HTTPRequest = {
     parseJson: () => Promise<any>;
-    req: http.IncomingMessage | null;
+    req: http.IncomingMessage;
   };
 
   type HTTPResponse = {
     sendJson: (data: Record<string, unknown>, statusCode?: number = 200) => http.ServerResponse;
     sendText: (text: string, statusCode?: number = 200) => http.ServerResponse;
-    res: http.ServerResponse | null;
+    res: http.ServerResponse;
   };
 
-  type HTTPRoute = { method: "POST" | "GET"; handle: HTTPRouteHandler };
+  type HTTPRoute = { method: "POST" | "GET"; handle: HTTPRouteHandler; incomingForm?: IncomingForm };
   type HTTPRouteHandler = (ctx: HTTPContext) => Promise<void>;
   type HTTPRouteMap = Record<string, HTTPRoute>;
   type HTTPContext = { data: any; res: HTTPResponse; req: HTTPRequest };

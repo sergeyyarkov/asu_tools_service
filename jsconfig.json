@@ -2,11 +2,12 @@
   "compilerOptions": {
     "baseUrl": ".",
     "checkJs": true,
-		"lib": ["ESNext"],
+    "lib": ["ESNext"],
+    "strict": true,
     "module": "nodenext",
     "resolveJsonModule": true,
     "paths": {
       "#root/*": ["./*"]
     }
-  }  
+  }
 }

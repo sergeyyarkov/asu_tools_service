@@ -7,7 +7,7 @@ var reportItemSchema = yup.object({
   job_description: yup.string().required(),
   root_cause: yup.string().required(),
   applicant: yup.number().required(),
-  executor_ids: yup.array(yup.number()).required(),
+  executor_ids: yup.array(yup.number()).required()
 });
 
 /** @type {HTTPRouteHandler} */

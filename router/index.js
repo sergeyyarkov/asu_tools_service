@@ -1,6 +1,7 @@
+import path from "node:path";
+import formidable from "formidable";
 import { ctxAsyncLocalStorage } from "#root/context.js";
-import handleExcelReportsFileParse from "./reports/parseExcel.handler.js";
-import handleReportsSyncParsed from "./reports/syncParsed.handler.js";
+import { handlers as reportsHandlers } from "./reports/index.js";
 
 /**
  * @type {HTTPRouteMap}
@@ -8,12 +9,20 @@ import handleReportsSyncParsed from "./reports/syncParsed.handler.js";
 export const ROUTE_MAP = {
   "/api/reports_excel_file_parse": {
     method: "POST",
-    handle: handleExcelReportsFileParse,
+    handle: reportsHandlers.parseExcelHandler,
+    incomingForm: formidable({
+      maxFields: 1,
+      maxFiles: 1,
+      filename: (_, ext) => `gpp-reports${ext}`,
+      keepExtensions: true,
+      uploadDir: path.join(process.cwd(), "./uploads"),
+      filter: ({ mimetype }) => mimetype && mimetype.includes("application/vnd.ms-excel")
+    })
   },
   "/api/reports_sync": {
     method: "POST",
-    handle: handleReportsSyncParsed,
-  },
+    handle: reportsHandlers.syncParsedHandler
+  }
 };
 
 /**
@@ -32,6 +41,11 @@ export async function routeHandler(url) {
         ctx.data = await ctx.req.parseJson();
       }
 
+      if (req.req.headers["content-type"]?.includes("multipart/form-data")) {
+        if (!route.incomingForm) throw new Error("Request cannot be processed without defined incoming form.");
+        ctx.data = await route.incomingForm.parse(req.req);
+      }
+
       if (route.method === req.req.method) {
         await route.handle(ctx);
       }
@@ -46,10 +60,10 @@ export async function routeHandler(url) {
       {
         error: {
           message: error?.message || "Internal Server Error",
-          stack: error?.stack || null,
-        },
+          stack: error?.stack || null
+        }
       },
-      error?.cause?.statusCode || 500,
+      error?.cause?.statusCode || 500
     );
   }
 }

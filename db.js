@@ -10,11 +10,11 @@ const connectionConfig = {
   pool: {
     max: 10,
     min: 0,
-    idleTimeoutMillis: 5000,
+    idleTimeoutMillis: 5000
   },
   options: {
-    trustServerCertificate: true,
-  },
+    trustServerCertificate: true
+  }
 };
 
 const pool = new sql.ConnectionPool(connectionConfig);

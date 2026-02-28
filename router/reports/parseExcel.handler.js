@@ -1,6 +1,15 @@
-import path from "node:path";
 import xlsx from "xlsx";
-import formidable from "formidable";
+
+const sheetName = "Отчеты";
+
+/** @type {xlsx.ParsingOptions} */
+const xlsxParseOptions = {
+  sheets: sheetName,
+  cellHTML: false,
+  cellFormula: false,
+  cellDates: true,
+  dateNF: "yyyy-mm-dd"
+};
 
 /**
  * Читает Excel файл отчетов и возвращает его в формате JSON
@@ -8,40 +17,18 @@ import formidable from "formidable";
  * @type {HTTPRouteHandler}
  */
 export default async (ctx) => {
-  const { req, res } = ctx;
-  const sheetName = "Отчеты";
+  const { res } = ctx;
+  const [, files] = ctx.data;
+  const excelFilePath = files?.report?.at(0)?.filepath;
 
   /** @type {{ markedReports: ReportModel[], reports: ReportModel[] }} */
   const ret = { reports: [], markedReports: [] };
-
-  /** @type {xlsx.ParsingOptions} */
-  const xlsxParseOptions = {
-    sheets: sheetName,
-    cellHTML: false,
-    cellFormula: false,
-    cellDates: true,
-    dateNF: "yyyy-mm-dd",
-  };
-
-  const form = formidable({
-    maxFields: 1,
-    maxFiles: 1,
-    filename: (_, ext) => `gpp-reports${ext}`,
-    keepExtensions: true,
-    uploadDir: path.join(process.cwd(), "./uploads"),
-    filter: ({ mimetype }) => mimetype && mimetype.includes("application/vnd.ms-excel"),
-  });
-
-  const [, files] = await form.parse(req.req);
-  const excelFilePath = files?.report?.at(0)?.filepath;
 
   if (excelFilePath) {
     const workbook = xlsx.readFile(excelFilePath, xlsxParseOptions);
     const sheet = workbook.Sheets[sheetName];
 
-    if (!sheet) {
-      throw new Error("Invalid reports workbook.", { cause: { statusCode: 400 } });
-    }
+    if (!sheet) throw new Error("Invalid reports workbook.", { cause: { statusCode: 400 } });
 
     const data = xlsx.utils.sheet_to_json(sheet, { raw: false, blankrows: true });
 
@@ -59,23 +46,11 @@ export default async (ctx) => {
           job_description: data[i][cols[4]].split("\r\r\n")[1] || "",
           root_cause: data[i]["__EMPTY_2"] || "",
           applicantName: data[i][cols[3]].split("\r\r\n")[0] || "",
-          executorNames: data[i][cols[4]].split("\r\r\n")[0] || "",
+          executorNames: data[i][cols[4]].split("\r\r\n")[0] || ""
         });
 
         continue;
       }
-
-      const parseReasonCallAndJobDesc = (str = "") => {
-        const splitted = splitLongSpacedSentence(str);
-        if (splitted.length > 1) return splitted.slice(1).join(" ");
-        return str.split("\r\n").slice(1).join(" ");
-      };
-
-      const parseNames = (str = "") => {
-        const splitted = splitLongSpacedSentence(str);
-        if (splitted.length > 1) return splitted[0];
-        return str.split("\r\n")[0];
-      };
 
       /** Остальные отчеты */
       ret.reports.push({
@@ -85,7 +60,7 @@ export default async (ctx) => {
         job_description: parseReasonCallAndJobDesc(data[i][cols[4]]),
         root_cause: data[i]["__EMPTY_2"] || "",
         applicantName: parseNames(data[i][cols[3]]),
-        executorNames: parseNames(data[i][cols[4]]),
+        executorNames: parseNames(data[i][cols[4]])
       });
     }
   } else {
@@ -95,16 +70,17 @@ export default async (ctx) => {
   res.sendJson({ data: ret });
 };
 
-// /**
-//  * @param {string} filepath
-//  */
-// function reportsExcelFileToJson(filepath) {
-//   try {
+function parseReasonCallAndJobDesc(str = "") {
+  const splitted = splitLongSpacedSentence(str);
+  if (splitted.length > 1) return splitted.slice(1).join(" ");
+  return str.split("\r\n").slice(1).join(" ");
+}
 
-//   } catch (error) {
-
-//   }
-// }
+function parseNames(str = "") {
+  const splitted = splitLongSpacedSentence(str);
+  if (splitted.length > 1) return splitted[0];
+  return str.split("\r\n")[0];
+}
 
 /**
  * @param {string} str
