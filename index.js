@@ -1,7 +1,7 @@
 import http from "node:http";
 import { routeHandler } from "./router/index.js";
 import packageJson from "./package.json" with { type: "json" };
-import { ctxAsyncLocalStorage } from "./context.js";
+import { httpStorage } from "./context.js";
 // import db from "./db.js";
 import response from "./response.js";
 import request from "./request.js";
@@ -21,10 +21,11 @@ http
         req: Object.create(request),
         res: Object.create(response)
       };
+
       ctx.req.req = req;
       ctx.res.res = res;
 
-      ctxAsyncLocalStorage.run(ctx, () =>
+      httpStorage.run(ctx, () =>
         routeHandler(url).then(() => {
           console.log(`${new Date().toISOString()} Request: ${url.pathname}`);
         })

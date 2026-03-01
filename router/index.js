@@ -1,6 +1,6 @@
 import path from "node:path";
 import formidable from "formidable";
-import { ctxAsyncLocalStorage } from "#root/context.js";
+import { httpStorage } from "#root/context.js";
 import { handlers as reportsHandlers } from "./reports/index.js";
 
 /**
@@ -30,7 +30,7 @@ export const ROUTE_MAP = {
  */
 export async function routeHandler(url) {
   /** @type {HTTPContext} */
-  const ctx = ctxAsyncLocalStorage.getStore();
+  const ctx = httpStorage.getStore();
   const { req, res } = ctx;
 
   try {
@@ -53,7 +53,7 @@ export async function routeHandler(url) {
       return;
     }
 
-    res.sendJson({ error: { message: "Указанный URL не имеет обработчика." } }, 404);
+    res.sendJson({ error: { message: "Route not found." } }, 404);
   } catch (error) {
     console.error(error);
     res.sendJson(
