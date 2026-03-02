@@ -1,3 +1,5 @@
+import { BadRequestError } from "#root/errors/index.js";
+import db from "#root/db.js";
 import xlsx from "xlsx";
 
 const sheetName = "Отчеты";
@@ -12,17 +14,33 @@ const xlsxParseOptions = {
 };
 
 /**
- * Читает Excel файл отчетов и возвращает его в формате JSON
+ * URL: /api/reports_excel_file_parse
+ * Method: POST
+ * Description: Читает Excel файл отчетов и возвращает его в формате JSON. Принимает на вход файл
+ *              отчетов в формате Excel.
  *
  * @type {HTTPRouteHandler}
  */
 export default async (ctx) => {
   const { res } = ctx;
+
+  if (!ctx.data) throw new BadRequestError("Cannot proceed uploaded file");
+
   const [, files] = ctx.data;
   const excelFilePath = files?.report?.at(0)?.filepath;
 
   /** @type {{ markedReports: ReportModel[], reports: ReportModel[] }} */
   const ret = { reports: [], markedReports: [] };
+
+  let foundEqupments = 0;
+
+  ctx.res.res.setHeaders(
+    new Headers({
+      Connection: "keep-alive",
+      "Cache-Control": "no-cache",
+      "Content-Type": "text/event-stream"
+    })
+  );
 
   if (excelFilePath) {
     const workbook = xlsx.readFile(excelFilePath, xlsxParseOptions);
@@ -63,11 +81,29 @@ export default async (ctx) => {
         executorNames: parseNames(data[i][cols[4]])
       });
     }
+
+    /** @param {ReportModel} report */
+    const checkReportAssigments = async (report) => {
+      const equipment = await db
+        .request()
+        .query(`select id, name from dbo.asu_system_api_subsystemlist where name like N'%${report.equipment}%';`);
+
+      if (equipment.recordset.length !== 0) foundEqupments++;
+
+      res.sendSSEJson(report, "reportParseProgress");
+
+      return equipment;
+    };
+
+    console.log("Total reports:", ret.reports.concat(ret.markedReports).length);
+    await Promise.allSettled(ret.reports.concat(ret.markedReports).map((r) => checkReportAssigments(r)));
+    ctx.res.sendSSEJson({ foundEqupments }, "reportParseDone");
+    console.log("Parse done");
   } else {
-    throw new Error("Bad request", { cause: { statusCode: 400 } });
+    throw new BadRequestError();
   }
 
-  res.sendJson({ data: ret });
+  res.res.end();
 };
 
 function parseReasonCallAndJobDesc(str = "") {

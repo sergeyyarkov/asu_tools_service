@@ -1,7 +1,9 @@
 import path from "node:path";
 import formidable from "formidable";
-import { httpStorage } from "#root/context.js";
+import { ctxStorage } from "#root/context.js";
 import { handlers as reportsHandlers } from "./reports/index.js";
+import { BadRequestError, HttpError, NotFoundError } from "#root/errors/index.js";
+import { serializeError } from "serialize-error";
 
 /**
  * @type {HTTPRouteMap}
@@ -16,7 +18,7 @@ export const ROUTE_MAP = {
       filename: (_, ext) => `gpp-reports${ext}`,
       keepExtensions: true,
       uploadDir: path.join(process.cwd(), "./uploads"),
-      filter: ({ mimetype }) => mimetype && mimetype.includes("application/vnd.ms-excel")
+      filter: ({ mimetype }) => !!mimetype && mimetype.includes("application/vnd.ms-excel")
     })
   },
   "/api/reports_sync": {
@@ -30,7 +32,7 @@ export const ROUTE_MAP = {
  */
 export async function routeHandler(url) {
   /** @type {HTTPContext} */
-  const ctx = httpStorage.getStore();
+  const ctx = ctxStorage.getStore();
   const { req, res } = ctx;
 
   try {
@@ -42,28 +44,47 @@ export async function routeHandler(url) {
       }
 
       if (req.req.headers["content-type"]?.includes("multipart/form-data")) {
-        if (!route.incomingForm) throw new Error("Request cannot be processed without defined incoming form.");
+        if (!route.incomingForm) {
+          throw new BadRequestError("Request cannot be processed without defined incoming form.");
+        }
+
         ctx.data = await route.incomingForm.parse(req.req);
       }
 
       if (route.method === req.req.method) {
         await route.handle(ctx);
+        return;
       }
+    }
 
+    throw new NotFoundError("Route not found");
+  } catch (error) {
+    console.error(error);
+
+    if (error instanceof HttpError) {
+      res.sendJson(
+        {
+          error: {
+            name: error.name,
+            message: error.message || "Internal Server Error",
+            stack: error.stack || null
+          }
+        },
+        error.statusCode || 500
+      );
       return;
     }
 
-    res.sendJson({ error: { message: "Route not found." } }, 404);
-  } catch (error) {
-    console.error(error);
+    const serializedError = serializeError(error);
+
     res.sendJson(
       {
         error: {
-          message: error?.message || "Internal Server Error",
-          stack: error?.stack || null
+          ...serializedError,
+          stack: process.env.NODE_ENV !== "production" ? serializedError.stack : undefined
         }
       },
-      error?.cause?.statusCode || 500
+      500
     );
   }
 }

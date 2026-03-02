@@ -1,3 +1,3 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export const httpStorage = new AsyncLocalStorage();
+export const ctxStorage = new AsyncLocalStorage();

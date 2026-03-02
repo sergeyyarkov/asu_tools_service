@@ -19,6 +19,7 @@ declare global {
 
   type HTTPResponse = {
     sendJson: (data: Record<string, unknown>, statusCode?: number = 200) => http.ServerResponse;
+    sendSSEJson: (data: Record<string, unknown>, eventName: string, statusCode?: number = 200) => void;
     sendText: (text: string, statusCode?: number = 200) => http.ServerResponse;
     res: http.ServerResponse;
   };

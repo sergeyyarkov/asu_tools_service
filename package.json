@@ -15,6 +15,7 @@
   "dependencies": {
     "formidable": "^3.5.4",
     "mssql": "^12.2.0",
+    "serialize-error": "^13.0.1",
     "xlsx": "^0.18.5",
     "yup": "^1.7.1"
   },
