@@ -1,8 +1,11 @@
 import { BadRequestError } from "#root/errors/index.js";
 import db from "#root/db.js";
 import xlsx from "xlsx";
+import pLimit from "p-limit";
+import { serializeError } from "serialize-error";
 
 const sheetName = "Отчеты";
+const limit = pLimit(10);
 
 /** @type {xlsx.ParsingOptions} */
 const xlsxParseOptions = {
@@ -16,8 +19,8 @@ const xlsxParseOptions = {
 /**
  * URL: /api/reports_excel_file_parse
  * Method: POST
- * Description: Читает Excel файл отчетов и возвращает его в формате JSON. Принимает на вход файл
- *              отчетов в формате Excel.
+ * Description: Принимает на вход файл отчетов в формате Excel, парсит его, проверяет связи с БД,
+ *              отдает отчет в формате JSON частями.
  *
  * @type {HTTPRouteHandler}
  */
@@ -29,18 +32,21 @@ export default async (ctx) => {
   const [, files] = ctx.data;
   const excelFilePath = files?.report?.at(0)?.filepath;
 
-  /** @type {{ markedReports: ReportModel[], reports: ReportModel[] }} */
-  const ret = { reports: [], markedReports: [] };
+  /** @type {ReportModel[]} */
+  const reports = [];
 
-  let foundEqupments = 0;
+  let parseResultCount = { equipments: 0, applicants: 0, executors: 0 };
+  let isReqClosed = false;
 
-  ctx.res.res.setHeaders(
+  res.res.setHeaders(
     new Headers({
       Connection: "keep-alive",
       "Cache-Control": "no-cache",
       "Content-Type": "text/event-stream"
     })
   );
+
+  res.res.on("close", () => (isReqClosed = true));
 
   if (excelFilePath) {
     const workbook = xlsx.readFile(excelFilePath, xlsxParseOptions);
@@ -57,53 +63,77 @@ export default async (ctx) => {
 
       /** Несинхронизированные помеченные отчеты */
       if ("__EMPTY_3" in data[i] && data[i]["__EMPTY_3"] === "r") {
-        ret.markedReports.push({
+        reports.push({
           date: data[i][cols[0]],
           equipment: data[i][cols[1]],
           reason_call: data[i][cols[3]].split("\r\r\n")[1] || "",
           job_description: data[i][cols[4]].split("\r\r\n")[1] || "",
           root_cause: data[i]["__EMPTY_2"] || "",
           applicantName: data[i][cols[3]].split("\r\r\n")[0] || "",
-          executorNames: data[i][cols[4]].split("\r\r\n")[0] || ""
+          executorNames: data[i][cols[4]].split("\r\r\n")[0] || "",
+          isMarked: true
         });
 
         continue;
       }
 
       /** Остальные отчеты */
-      ret.reports.push({
+      reports.push({
         date: data[i][cols[0]],
         equipment: data[i][cols[1]],
-        reason_call: parseReasonCallAndJobDesc(data[i][cols[3]]),
-        job_description: parseReasonCallAndJobDesc(data[i][cols[4]]),
+        reason_call: parseReasonCallAndJobDesc(data[i][cols[3]]).trim(),
+        job_description: parseReasonCallAndJobDesc(data[i][cols[4]]).trim(),
         root_cause: data[i]["__EMPTY_2"] || "",
-        applicantName: parseNames(data[i][cols[3]]),
-        executorNames: parseNames(data[i][cols[4]])
+        applicantName: parseNames(data[i][cols[3]]).trim(),
+        executorNames: parseNames(data[i][cols[4]]).trim()
       });
     }
 
     /** @param {ReportModel} report */
     const checkReportAssigments = async (report) => {
+      if (isReqClosed) {
+        return Promise.reject("Client closed the connection.");
+      }
+
       const equipment = await db
         .request()
-        .query(`select id, name from dbo.asu_system_api_subsystemlist where name like N'%${report.equipment}%';`);
+        .query(`select id from dbo.asu_system_api_subsystemlist where name like N'%${report.equipment}%';`);
 
-      if (equipment.recordset.length !== 0) foundEqupments++;
+      const applicant = await db
+        .request()
+        .query(
+          `select id from dbo.gpp_report_api_applicant where name like N'${report.applicantName.split(" ")[0]}%';`
+        );
 
-      res.sendSSEJson(report, "reportParseProgress");
+      if (equipment.recordset.length !== 0) parseResultCount.equipments++;
+      if (applicant.recordset.length !== 0) parseResultCount.applicants++;
+
+      res.sendSSEJson(
+        {
+          report: {
+            ...report,
+            equipment: equipment.recordset.at(0)?.id || null,
+            applicant: applicant.recordset.at(0)?.id || null
+          }
+        },
+        "progress"
+      );
 
       return equipment;
     };
 
-    console.log("Total reports:", ret.reports.concat(ret.markedReports).length);
-    await Promise.allSettled(ret.reports.concat(ret.markedReports).map((r) => checkReportAssigments(r)));
-    ctx.res.sendSSEJson({ foundEqupments }, "reportParseDone");
-    console.log("Parse done");
+    const requests = reports.map((r) => limit(() => checkReportAssigments(r)));
+
+    await Promise.all(requests)
+      .then(() => res.sendSSEJson(parseResultCount, "done"))
+      .catch((error) => {
+        console.error(error);
+        res.sendSSEJson({ error: serializeError(error) }, "error");
+      })
+      .finally(() => res.res.end());
   } else {
     throw new BadRequestError();
   }
-
-  res.res.end();
 };
 
 function parseReasonCallAndJobDesc(str = "") {

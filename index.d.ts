@@ -10,6 +10,7 @@ declare global {
     root_cause: string;
     applicantName: string;
     executorNames: string;
+    isMarked?: boolean;
   };
 
   type HTTPRequest = {

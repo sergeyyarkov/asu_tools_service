@@ -13,6 +13,14 @@ function application() {
     try {
       const url = new URL(`http://localhost:${SERVER_PORT}${req.url}`);
 
+      res.setHeaders(
+        new Headers({
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST",
+          "Access-Control-Allow-Headers": "Content-Type"
+        })
+      );
+
       /** @type {HTTPContext} */
       const ctx = {
         data: null,
