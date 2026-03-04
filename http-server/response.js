@@ -1,6 +1,6 @@
 /**
  * @param {import('node:http').ServerResponse} res
- * @returns {HTTPResponse}
+ * @returns {import('./types/http-server.js').HttpResponse}
  */
 export function createResponse(res) {
   return {

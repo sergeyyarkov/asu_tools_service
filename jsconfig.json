@@ -2,6 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",
     "checkJs": true,
+    "allowJs": true,
     "lib": ["ESNext"],
     "strict": true,
     "module": "nodenext",
@@ -9,5 +10,6 @@
     "paths": {
       "#root/*": ["./*"]
     }
-  }
+  },
+  "exclude": ["./http-server/types/*.d.ts"]
 }

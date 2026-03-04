@@ -1,4 +1,4 @@
-import { BadRequestError } from "#root/errors/index.js";
+import { BadRequestError } from "#root/http-server/index.js";
 import yup from "yup";
 
 var reportItemSchema = yup.object({
@@ -11,7 +11,7 @@ var reportItemSchema = yup.object({
   executor_ids: yup.array(yup.number()).required()
 });
 
-/** @type {HTTPRouteHandler} */
+/** @type {import("#root/http-server/types/http-server.js").HttpRouteHandler} */
 export default async ({ res, data }) => {
   const inputSchema = yup.object({ reports: yup.array(reportItemSchema).required() }).required();
 

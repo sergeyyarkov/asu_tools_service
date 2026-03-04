@@ -1,6 +1,6 @@
 /**
  * @param {import('node:http').IncomingMessage} req
- * @returns {HTTPRequest}
+ * @returns {import('./types/http-server.js').HttpRequest}
  */
 export function createRequest(req) {
   return {

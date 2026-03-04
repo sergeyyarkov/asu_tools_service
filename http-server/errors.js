@@ -16,7 +16,7 @@ export class BadRequestError extends HttpError {
    */
   constructor(message) {
     super({
-      name: "E_BAD_REQUEST",
+      name: "ERR_BAD_REQUEST",
       message: message || "Bad Request",
       statusCode: 400
     });
@@ -29,9 +29,22 @@ export class NotFoundError extends HttpError {
    */
   constructor(message) {
     super({
-      name: "E_NOT_FOUND",
+      name: "ERR_NOT_FOUND",
       message: message || "Not found",
       statusCode: 404
+    });
+  }
+}
+
+export class ServiceUnavailableError extends HttpError {
+  /**
+   * @param {string} [message]
+   */
+  constructor(message) {
+    super({
+      name: "ERR_SERVICE_UNAVAILABLE",
+      message: message || "Service unavailable",
+      statusCode: 503
     });
   }
 }

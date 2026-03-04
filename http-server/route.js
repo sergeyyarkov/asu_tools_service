@@ -1,43 +1,22 @@
-import path from "node:path";
-import formidable from "formidable";
-import { ctxStorage } from "#root/context.js";
-import { handlers as reportsHandlers } from "./reports/index.js";
-import { BadRequestError, HttpError, NotFoundError } from "#root/errors/index.js";
 import { serializeError } from "serialize-error";
-
-/**
- * @type {HTTPRouteMap}
- */
-export const ROUTE_MAP = {
-  "/api/reports_excel_file_parse": {
-    method: "POST",
-    handle: reportsHandlers.parseExcelHandler,
-    incomingForm: formidable({
-      maxFields: 1,
-      maxFiles: 1,
-      filename: (_, ext) => `gpp-reports${ext}`,
-      keepExtensions: true,
-      uploadDir: path.join(process.cwd(), "./uploads"),
-      filter: ({ mimetype }) => !!mimetype && mimetype.includes("application/vnd.ms-excel")
-    })
-  },
-  "/api/reports_sync": {
-    method: "POST",
-    handle: reportsHandlers.syncParsedHandler
-  }
-};
+import formidable from "formidable";
+import { BadRequestError, HttpError, NotFoundError } from "./errors.js";
 
 /**
  * @param {URL} url
+ * @param {import('node:async_hooks').AsyncLocalStorage<import('./http-server.js').HttpContext>} ctxStorage
+ * @param {import("./http-server.js").HttpRouteMap} routeMap
  */
-export async function routeHandler(url) {
-  /** @type {HTTPContext} */
+export async function routeHandler(url, ctxStorage, routeMap) {
   const ctx = ctxStorage.getStore();
+
+  if (!ctx) throw new Error("HTTP context storage is undefined!");
+
   const { req, res } = ctx;
 
   try {
-    if (url.pathname in ROUTE_MAP) {
-      const route = ROUTE_MAP[url.pathname];
+    if (url.pathname in routeMap) {
+      const route = routeMap[url.pathname];
 
       if (req.req.headers["content-type"] === "application/json") {
         ctx.data = await ctx.req.parseJson();
@@ -48,7 +27,7 @@ export async function routeHandler(url) {
           throw new BadRequestError("Request cannot be processed without defined incoming form.");
         }
 
-        ctx.data = await route.incomingForm.parse(req.req);
+        ctx.data = await formidable(route.incomingForm).parse(req.req);
       }
 
       if (route.method === req.req.method) {
@@ -88,5 +67,3 @@ export async function routeHandler(url) {
     );
   }
 }
-
-export * from "./reports/parseExcel.handler.js";
