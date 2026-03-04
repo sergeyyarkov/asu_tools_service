@@ -47,21 +47,9 @@ export default async (ctx) => {
 
   let parseResultCount = { equipments: 0, applicants: 0, executors: 0, reportsFullfilled: 0 };
 
-  // res.res.setHeaders(
-  //   new Headers({
-  //     Connection: "keep-alive",
-  //     "Cache-Control": "no-cache",
-  //     "Content-Type": "text/event-stream"
-  //   })
-  // );
-
-  // ctx.res.res.on("close", () => (isReqClosed = true));
-
   if (excelFilePath) {
     const workbook = xlsx.readFile(excelFilePath, xlsxParseOptions);
     const sheet = workbook.Sheets[sheetName];
-
-    console.log();
 
     if (!sheet) throw new Error("Invalid reports workbook.", { cause: { statusCode: 400 } });
 
