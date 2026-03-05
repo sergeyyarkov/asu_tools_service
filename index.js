@@ -4,7 +4,7 @@ import { reportsHandlers } from "./handlers/index.js";
 import packageJson from "./package.json" with { type: "json" };
 import db from "./db.js";
 
-const SERVER_PORT = 3000;
+const SERVER_PORT = Number.parseInt(`${process.env.PORT || "3000"}`, 10);
 
 /** @type {Map<string, import("./http-server/types/http-server.js").HttpContext>} */
 export const clients = new Map();
