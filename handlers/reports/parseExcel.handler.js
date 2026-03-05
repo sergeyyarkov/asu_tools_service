@@ -137,7 +137,7 @@ export default async (ctx) => {
       sseClientCtx.res.sendSSEJson(parseResultCount, "done");
     } catch (error) {
       console.error(error);
-      sseClientCtx.res.sendSSEJson({ error: serializeError(error) }, "error");
+      sseClientCtx.res.sendSSEJson({ error: serializeError(error) }, "parseError");
     } finally {
       sseClientCtx.local.isParsing = false;
     }

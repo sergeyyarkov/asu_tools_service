@@ -19,7 +19,9 @@ export async function routeHandler(url, ctxStorage, routeMap) {
     if (url.pathname in routeMap) {
       const route = routeMap[url.pathname];
 
-      if (route.method !== req.req.method) throw new MethodNotAllowedError();
+      if (route.method !== req.req.method) {
+        throw new MethodNotAllowedError();
+      }
 
       if (req.req.headers["content-type"]?.includes("application/json")) {
         ctx.data = await ctx.req.parseJson();
