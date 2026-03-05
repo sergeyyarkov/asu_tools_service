@@ -36,6 +36,19 @@ export class NotFoundError extends HttpError {
   }
 }
 
+export class MethodNotAllowedError extends HttpError {
+  /**
+   * @param {string} [message]
+   */
+  constructor(message) {
+    super({
+      name: "ERR_METHOD_NOT_ALLOWED",
+      message: message || "Method not allowed",
+      statusCode: 405
+    });
+  }
+}
+
 export class ServiceUnavailableError extends HttpError {
   /**
    * @param {string} [message]

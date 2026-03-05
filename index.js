@@ -39,7 +39,7 @@ export const routeMap = {
   }
 };
 
-createServer({ routeMap }).listen(SERVER_PORT, async () => {
+createServer({ routeMap, enableCors: true }).listen(SERVER_PORT, async () => {
   console.log(`Service ${packageJson.name} is running at port ${SERVER_PORT}.`);
   await db.connect().then(() => console.log("Database connected!"));
 });

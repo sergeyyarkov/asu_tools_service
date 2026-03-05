@@ -13,10 +13,14 @@ export function createRequest(req) {
         /** @type {Buffer[]} */
         const body = [];
 
-        this.req.on("data", (chunk) => body.push(chunk));
+        this.req.on("data", (chunk) => {
+          // TODO: make body size limit
+          body.push(chunk);
+        });
         this.req.on("end", () => {
           try {
-            const parsedJson = JSON.parse(Buffer.concat(body).toString());
+            const buffer = Buffer.concat(body);
+            const parsedJson = JSON.parse(buffer.toString());
             resolve(parsedJson);
           } catch (error) {
             reject(error);

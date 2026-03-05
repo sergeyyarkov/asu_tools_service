@@ -1,6 +1,6 @@
 import { serializeError } from "serialize-error";
 import formidable from "formidable";
-import { BadRequestError, HttpError, NotFoundError } from "./errors.js";
+import { BadRequestError, HttpError, MethodNotAllowedError, NotFoundError } from "./errors.js";
 
 /**
  * @param {URL} url
@@ -15,10 +15,13 @@ export async function routeHandler(url, ctxStorage, routeMap) {
   const { req, res } = ctx;
 
   try {
+    // TODO: create router based on URLPattern
     if (url.pathname in routeMap) {
       const route = routeMap[url.pathname];
 
-      if (req.req.headers["content-type"] === "application/json") {
+      if (route.method !== req.req.method) throw new MethodNotAllowedError();
+
+      if (req.req.headers["content-type"]?.includes("application/json")) {
         ctx.data = await ctx.req.parseJson();
       }
 
@@ -30,10 +33,9 @@ export async function routeHandler(url, ctxStorage, routeMap) {
         ctx.data = await formidable(route.incomingForm).parse(req.req);
       }
 
-      if (route.method === req.req.method) {
-        await route.handle(ctx);
-        return;
-      }
+      await route.handle(ctx);
+
+      return;
     }
 
     throw new NotFoundError("Route not found");
