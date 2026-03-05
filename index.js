@@ -6,7 +6,7 @@ import db from "./db.js";
 
 const SERVER_PORT = 3000;
 
-/** @type {Map<string, import("./http-server/types/http-server.js").HttpResponse>} */
+/** @type {Map<string, import("./http-server/types/http-server.js").HttpContext>} */
 export const clients = new Map();
 
 /**

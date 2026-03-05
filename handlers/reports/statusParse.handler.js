@@ -12,7 +12,7 @@ export default (ctx) => {
   const { res } = ctx;
   const clientId = crypto.randomUUID();
 
-  clients.set(clientId, ctx.res);
+  clients.set(clientId, ctx);
 
   res.res.setHeaders(
     new Headers({
@@ -26,7 +26,6 @@ export default (ctx) => {
 
   res.res.on("close", () => {
     clients.delete(clientId);
-    console.log(clients);
     res.res.end();
   });
 };
