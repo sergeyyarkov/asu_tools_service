@@ -1,5 +1,5 @@
 {
-  "name": "asu_tools-sync-service",
+  "name": "asu_tools_service",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",

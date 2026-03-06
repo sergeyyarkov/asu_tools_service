@@ -1,0 +1,20 @@
+services:
+  asu_tools:
+    container_name: asu_tools
+    image: sergeyyarkov/asu_tools:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      - MSSQL_HOST=mssql
+    networks:
+      - asu_net
+    ports:
+      - 3001:3001
+    volumes:
+      - ./uploads:/app/uploads
+
+networks:
+  asu_net:
+    external: true
