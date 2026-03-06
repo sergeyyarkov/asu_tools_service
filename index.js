@@ -16,7 +16,7 @@ export const clients = new Map();
 export const routeMap = {
   "/": {
     method: "GET",
-    handle: (ctx) => ctx.res.sendText("Сервис инструментов таблицы АСУ ТП.")
+    handle: (ctx) => ctx.res.sendText("Сервис инструментов таблицы АСУ.")
   },
   "/api/reports_status_parse": {
     method: "GET",
