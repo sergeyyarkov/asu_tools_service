@@ -13,7 +13,9 @@ const connectionConfig = {
     idleTimeoutMillis: 30000
   },
   options: {
-    trustServerCertificate: true
+    trustServerCertificate: true,
+    cancelTimeout: 60000,
+    requestTimeout: 120000
   }
 };
 
