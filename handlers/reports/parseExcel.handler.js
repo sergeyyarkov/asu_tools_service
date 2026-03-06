@@ -156,9 +156,13 @@ async function checkReportAssigments(report, callback, rejectCond) {
 
   const executorSurnames = extractSurnamesFromExecutorField(report.executorNames);
 
-  const equipment = await db
-    .request()
-    .query(`select id, name from dbo.asu_system_api_subsystemlist where name like N'%${report.equipment}%';`);
+  const equipment = await db.request()
+    .query(`select t1.id, t1.name, t1.location_id, t3.name as base_location_name, t2.name as location_name, t2.base_location_id 
+              from dbo.asu_system_api_subsystemlist as t1
+                left join dbo.asu_system_api_location as t2 on t2.id = t1.location_id 
+                left join dbo.asu_system_api_baselocation as t3 on t3.id = t2.base_location_id
+              where t1.name like N'%${report.equipment}%';
+          `);
 
   const applicant = await db
     .request()
@@ -185,10 +189,20 @@ async function checkReportAssigments(report, callback, rejectCond) {
   const hasEquipmentLink = equipment.recordset.length !== 0;
   const hasApplicantLink = applicant.recordset.length !== 0;
 
+  const location =
+    hasEquipmentLink && equipment.recordset[0].location_id
+      ? {
+          id: equipment.recordset[0].location_id,
+          name: equipment.recordset[0].location_name,
+          base_location_name: equipment.recordset[0].base_location_name,
+          base_location: equipment.recordset[0].base_location_id
+        }
+      : null;
+
   callback({
     ...report,
     executors,
-    equipment: hasEquipmentLink ? { id: equipment.recordset[0].id, name: equipment.recordset[0].name } : null,
+    equipment: hasEquipmentLink ? { id: equipment.recordset[0].id, name: equipment.recordset[0].name, location } : null,
     applicant: hasApplicantLink ? { id: applicant.recordset[0].id, name: applicant.recordset[0].name } : null
   });
 }

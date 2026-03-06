@@ -1,4 +1,5 @@
 import path from "node:path";
+import fsp from "node:fs/promises";
 import { createServer } from "./http-server/index.js";
 import { reportsHandlers } from "./handlers/index.js";
 import packageJson from "./package.json" with { type: "json" };
@@ -41,5 +42,6 @@ export const routeMap = {
 
 createServer({ routeMap, enableCors: true }).listen(SERVER_PORT, async () => {
   console.log(`Service ${packageJson.name} is running at port ${SERVER_PORT}.`);
+  await fsp.mkdir(path.join(process.cwd(), "/uploads"), { recursive: true });
   await db.connect().then(() => console.log("Database connected!"));
 });
