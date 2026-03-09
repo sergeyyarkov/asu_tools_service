@@ -1,14 +1,12 @@
 import http from "node:http";
-import { AsyncLocalStorage } from "node:async_hooks";
 import { createRequest } from "./request.js";
 import { createResponse } from "./response.js";
-import { routeHandler } from "./route.js";
+import { createRouter } from "./route.js";
 
 /**
  * @typedef {import('./types/http-server.js').HttpServer} HttpServer
  * @typedef {import('./types/http-server.js').HttpServerOptions} HttpServerOptions
  * @typedef {import('./types/http-server.js').HttpContext} HttpContext
- * @typedef {import('./types/http-server.js').HttpRouteMap} HttpRouteMap
  */
 
 /**
@@ -16,38 +14,35 @@ import { routeHandler } from "./route.js";
  * @returns {HttpServer}
  */
 export function createServer(options) {
-  const { routeMap, enableCors } = options;
-  const ctxStorage = new AsyncLocalStorage();
-  let serverPort = 3000;
+  const router = createRouter();
 
   const server = http.createServer((req, res) => {
     try {
-      const url = new URL(`http://${req.headers.host || `localhost:${serverPort}`}${req.url}`);
+      const request = createRequest(req);
+      const response = createResponse(res);
 
       /** @type {HttpContext} */
       const ctx = {
         data: null,
-        req: createRequest(req),
-        res: createResponse(res),
-        params: url.searchParams,
+        req: request,
+        res: response,
+        searchParams: request.url.searchParams,
+        params: {},
         local: {}
       };
 
-      if (enableCors) {
+      if (options.cors) {
         res.setHeaders(
           new Headers({
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,POST,DELETE,UPDATE,PUT,PATCH",
-            "Access-Control-Allow-Headers": "Content-Type,Accept"
+            "Access-Control-Allow-Origin": options.cors.allow,
+            "Access-Control-Allow-Methods": options.cors.methods,
+            "Access-Control-Allow-Headers": options.cors.headers
           })
         );
       }
 
-      ctxStorage.run(ctx, () =>
-        routeHandler(url, ctxStorage, routeMap).then(() => {
-          console.log(`${new Date().toISOString()} Request: ${url.pathname}`);
-        })
-      );
+      console.log(`${new Date().toISOString()} Request: ${ctx.req.url}`);
+      router.handle(ctx);
     } catch (error) {
       console.error(error);
     }
@@ -55,9 +50,8 @@ export function createServer(options) {
 
   return {
     listen(port = 3000, cb) {
-      serverPort = port;
       server.listen(port, cb);
-      return server;
+      return { router };
     }
   };
 }

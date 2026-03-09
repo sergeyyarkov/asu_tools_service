@@ -26,10 +26,10 @@ const xlsxParseOptions = {
  * @type {import("#root/http-server/types/http-server.js").HttpRouteHandler}
  */
 export default async (ctx) => {
-  const { res, params } = ctx;
+  const { res, searchParams } = ctx;
   const [, files] = ctx.data;
   const limit = pLimit(10);
-  const clientId = params.get("clientId");
+  const clientId = searchParams.get("clientId");
   const excelFilePath = files?.report?.at(0)?.filepath;
   const reports = [];
   let isSseClientClosed = false;
@@ -70,7 +70,7 @@ export default async (ctx) => {
 
       if (!sheet) throw new Error("Invalid reports workbook.", { cause: { statusCode: 400 } });
 
-      const data = xlsx.utils.sheet_to_json(sheet, { raw: false, blankrows: true });
+      const data = xlsx.utils.sheet_to_json(sheet, { raw: false, blankrows: true, header: "A" });
 
       res.sendJson({ message: "OK" });
       sseClientCtx.local.isParsing = true;
@@ -90,6 +90,7 @@ export default async (ctx) => {
             root_cause: data[i]["__EMPTY_2"] || "",
             applicantName: data[i][cols[3]].split("\r\r\n")[0] || "",
             executorNames: data[i][cols[4]].split("\r\r\n")[0] || "",
+            rowNum: data[i].__rowNum__ + 1,
             isMarked: true
           });
 
@@ -104,7 +105,8 @@ export default async (ctx) => {
           job_description: parseReasonCallAndJobDesc(data[i][cols[4]]).trim(),
           root_cause: data[i]["__EMPTY_2"] || "",
           applicantName: parseNames(data[i][cols[3]]).trim(),
-          executorNames: parseNames(data[i][cols[4]]).trim()
+          executorNames: parseNames(data[i][cols[4]]).trim(),
+          rowNum: data[i].__rowNum__ + 1
         });
       }
     } catch (error) {

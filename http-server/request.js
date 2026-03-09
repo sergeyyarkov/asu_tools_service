@@ -8,6 +8,10 @@ export function createRequest(req) {
       return req;
     },
 
+    get url() {
+      return new URL(`http://${req.headers.host || `localhost`}${req.url}`);
+    },
+
     async parseJson() {
       return new Promise((resolve, reject) => {
         /** @type {Buffer[]} */
