@@ -3,7 +3,8 @@ import type IncomingForm from "formidable/Formidable.js";
 import formidable from "formidable";
 
 export interface HttpServer {
-  listen: (port: number, cb: () => void) => { router: HttpRouter };
+  listen: (port: number, cb: () => void) => void;
+  router: Pick<HttpRouter, "prefix" | "define">;
 }
 
 export interface HttpServerOptions {
@@ -26,9 +27,10 @@ export interface HttpRoute {
   handler: HttpRouteHandler;
   options: HttpRouteOptions;
 }
+
 export interface HttpRouter {
-  routes: Array<HttpRoute>;
   handle: (ctx: HttpContext) => Promise<void>;
+  prefix: (name: string, cb: (router: HttpRouter) => void) => void;
   define: (
     method: HttpMethod,
     pathname: string,

@@ -51,7 +51,10 @@ export function createServer(options) {
   return {
     listen(port = 3000, cb) {
       server.listen(port, cb);
-      return { router };
+    },
+    router: {
+      prefix: router.prefix,
+      define: router.define
     }
   };
 }

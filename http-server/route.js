@@ -1,18 +1,23 @@
 import { serializeError } from "serialize-error";
 import formidable from "formidable";
 import { BadRequestError, HttpError, MethodNotAllowedError, NotFoundError } from "./errors.js";
+import * as utils from "./utils/index.js";
 
 /**
  * @returns {import("./types/http-server.js").HttpRouter}
  */
 export function createRouter() {
+  /** @type {import("./types/http-server.js").HttpRoute[]} */
+  const routes = [];
+
+  let prefixNameGroup = "";
+
   return {
-    routes: [],
     async handle(ctx) {
       const { req, res } = ctx;
 
       try {
-        for (const route of this.routes) {
+        for (const route of routes) {
           const patternResult = route.pattern.exec(req.url.pathname);
 
           if (!patternResult) continue;
@@ -69,9 +74,18 @@ export function createRouter() {
         );
       }
     },
+    prefix(name, cb) {
+      const prevPrefix = prefixNameGroup;
+      prefixNameGroup += name;
+      cb(this);
+      prefixNameGroup = prevPrefix;
+    },
     define(method, pathname, handler, options = {}) {
+      if (!utils.matchRoutePathname(pathname)) throw new Error(`Incorrect pathname "${pathname}"`);
+      if (prefixNameGroup) pathname = utils.formatRoutePathname(prefixNameGroup + pathname);
       /** @type {import("./types/http-server.js").HttpRoute} */
-      this.routes.push({ method, pattern: new URLPattern({ pathname }), handler, options });
+      routes.push({ method, pattern: new URLPattern({ pathname }), handler, options });
+      console.log("defined:", pathname);
     }
   };
 }
