@@ -87,7 +87,7 @@ export default async (ctx) => {
             equipment: data[i][cols[1]],
             reason_call: data[i][cols[3]].split("\r\r\n")[1] || "",
             job_description: data[i][cols[4]].split("\r\r\n")[1] || "",
-            root_cause: data[i]["__EMPTY_2"] || "",
+            root_cause: data[i]["F"] || "",
             applicantName: data[i][cols[3]].split("\r\r\n")[0] || "",
             executorNames: data[i][cols[4]].split("\r\r\n")[0] || "",
             rowNum: data[i].__rowNum__ + 1,
@@ -103,7 +103,7 @@ export default async (ctx) => {
           equipment: data[i][cols[1]],
           reason_call: parseReasonCallAndJobDesc(data[i][cols[3]]).trim(),
           job_description: parseReasonCallAndJobDesc(data[i][cols[4]]).trim(),
-          root_cause: data[i]["__EMPTY_2"] || "",
+          root_cause: data[i]["F"] || "",
           applicantName: parseNames(data[i][cols[3]]).trim(),
           executorNames: parseNames(data[i][cols[4]]).trim(),
           rowNum: data[i].__rowNum__ + 1
