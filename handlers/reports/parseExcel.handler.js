@@ -81,7 +81,7 @@ export default async (ctx) => {
         if (i === 0) continue;
 
         /** Несинхронизированные помеченные отчеты */
-        if ("__EMPTY_3" in data[i] && data[i]["__EMPTY_3"] === "r") {
+        if ("G" in data[i] && data[i]["G"] === "r") {
           reports.push({
             date: data[i][cols[0]],
             equipment: data[i][cols[1]],
