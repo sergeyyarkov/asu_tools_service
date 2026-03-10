@@ -15,6 +15,7 @@ export function createRouter() {
   return {
     async handle(ctx) {
       const { req, res } = ctx;
+      const headers = req.req.headers;
 
       try {
         for (const route of routes) {
@@ -28,11 +29,11 @@ export function createRouter() {
 
           ctx.params = patternResult.pathname.groups;
 
-          if (req.req.headers["content-type"]?.includes("application/json")) {
+          if (headers["content-type"]?.includes("application/json")) {
             ctx.data = await ctx.req.parseJson();
           }
 
-          if (req.req.headers["content-type"]?.includes("multipart/form-data")) {
+          if (headers["content-type"]?.includes("multipart/form-data")) {
             if (!route.options.incomingForm) {
               throw new BadRequestError("Request cannot be processed without defined incoming form.");
             }

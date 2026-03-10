@@ -61,3 +61,16 @@ export class ServiceUnavailableError extends HttpError {
     });
   }
 }
+
+export class EntityTooLargeError extends HttpError {
+  /**
+   * @param {string} [message]
+   */
+  constructor(message) {
+    super({
+      name: "ERR_ENTITY_TOO_LARGE",
+      message: message || "Entity too large",
+      statusCode: 413
+    });
+  }
+}
