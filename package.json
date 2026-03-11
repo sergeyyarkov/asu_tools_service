@@ -22,7 +22,9 @@
     "yup": "^1.7.1"
   },
   "imports": {
-    "#root/*": "./*"
+    "#root/*": "./*",
+    "#handlers/*": "./handlers/*",
+    "#services/*": "./services/*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

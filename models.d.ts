@@ -16,6 +16,7 @@ type ReportModel = {
   applicantName: string;
   executorNames: string;
   isMarked?: boolean;
+  rowNum: number;
 };
 
 type ExecutorModel = { id: string; fullname: string };

@@ -8,7 +8,9 @@
     "module": "nodenext",
     "resolveJsonModule": true,
     "paths": {
-      "#root/*": ["./*"]
+      "#root/*": ["./*"],
+      "#handlers/*": ["./handlers/*"],
+      "#services/*": ["./services/*"]
     }
   },
   "exclude": ["./http-server/types/*.d.ts"]

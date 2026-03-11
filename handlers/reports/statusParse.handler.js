@@ -13,6 +13,7 @@ export default (ctx) => {
   const clientId = crypto.randomUUID();
 
   clients.set(clientId, ctx);
+  ctx.local.isClosed = false;
 
   res.res.setHeaders(
     new Headers({
@@ -25,6 +26,7 @@ export default (ctx) => {
   res.sendSSEJson({ message: "Connected!", clientId }, "data");
 
   res.res.on("close", () => {
+    ctx.local.isClosed = true;
     clients.delete(clientId);
     res.res.end();
   });

@@ -1,7 +1,7 @@
 import path from "node:path";
 import fsp from "node:fs/promises";
 import { createServer } from "./http-server/index.js";
-import { reportsHandlers } from "./handlers/index.js";
+import { reportsHandlers } from "#handlers/index.js";
 import packageJson from "./package.json" with { type: "json" };
 import db from "./db.js";
 
