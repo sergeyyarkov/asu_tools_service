@@ -3,11 +3,7 @@ import { createRequest } from "./request.js";
 import { createResponse } from "./response.js";
 import { createRouter } from "./route.js";
 
-/**
- * @typedef {import('./types/http-server.js').HttpServer} HttpServer
- * @typedef {import('./types/http-server.js').HttpServerOptions} HttpServerOptions
- * @typedef {import('./types/http-server.js').HttpContext} HttpContext
- */
+/** @import { HttpServerOptions, HttpServer, HttpContext } from "./types/http-server.js" */
 
 /**
  * @param {HttpServerOptions} options

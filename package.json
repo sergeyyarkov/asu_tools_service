@@ -24,7 +24,8 @@
   "imports": {
     "#root/*": "./*",
     "#handlers/*": "./handlers/*",
-    "#services/*": "./services/*"
+    "#services/*": "./services/*",
+    "#schemas/*": "./schemas/*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

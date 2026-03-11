@@ -10,7 +10,8 @@
     "paths": {
       "#root/*": ["./*"],
       "#handlers/*": ["./handlers/*"],
-      "#services/*": ["./services/*"]
+      "#services/*": ["./services/*"],
+      "#schemas/*": ["./schemas/*"]
     }
   },
   "exclude": ["./http-server/types/*.d.ts"]

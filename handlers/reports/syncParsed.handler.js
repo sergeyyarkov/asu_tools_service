@@ -1,15 +1,6 @@
 import { BadRequestError } from "#root/http-server/index.js";
-import yup from "yup";
-
-var reportItemSchema = yup.object({
-  date: yup.date().required(),
-  equipment: yup.string().nullable().required(),
-  reason_call: yup.string().required(),
-  job_description: yup.string().required(),
-  root_cause: yup.string().required(),
-  applicant: yup.number().required(),
-  executor_ids: yup.array(yup.number()).required()
-});
+import { reportsService } from "#root/services/reports.service.js";
+import { reportsSchema } from "#schemas/report.schema.js";
 
 /**
  * URL: /api/reports_sync
@@ -19,13 +10,10 @@ var reportItemSchema = yup.object({
  * @type {import("#root/http-server/types/http-server.js").HttpRouteHandler}
  */
 export default async ({ res, data }) => {
-  const inputSchema = yup.object({ reports: yup.array(reportItemSchema).required() }).required();
-
-  await inputSchema.validate(data).catch((err) => {
+  const { reports } = await reportsSchema.validate(data).catch((err) => {
     throw new BadRequestError(err.message);
   });
 
-  // TODO ...
-
-  res.sendJson({ data });
+  await reportsService.syncReportsWithDatabase(reports);
+  res.sendJson({ data: { message: "OK" } });
 };

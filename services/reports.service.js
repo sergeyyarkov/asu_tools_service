@@ -1,6 +1,10 @@
 import xlsx from "xlsx";
 import pLimit from "p-limit";
 import db from "#root/db.js";
+import mssql from "mssql";
+
+/** @import { reportsSchema } from "#schemas/report.schema.js" */
+/** @import { InferType } from "yup" */
 
 const sheetName = "Отчеты";
 
@@ -163,6 +167,50 @@ export const reportsService = {
         })
       )
     };
+  },
+
+  /**
+   * @param {InferType<typeof reportsSchema>['reports']} reports
+   */
+  async syncReportsWithDatabase(reports) {
+    const trx = new mssql.Transaction(db);
+    const table = new mssql.Table("dbo.gpp_report_api_report");
+
+    table.create = false;
+
+    table.columns.add("date", mssql.Date, { nullable: false });
+    table.columns.add("reason_call", mssql.NVarChar(mssql.MAX), { nullable: false });
+    table.columns.add("job_description", mssql.NVarChar(mssql.MAX), { nullable: false });
+    table.columns.add("root_cause", mssql.NVarChar(mssql.MAX), { nullable: true });
+    table.columns.add("applicant_id", mssql.BigInt, { nullable: true });
+    table.columns.add("equipment_id", mssql.BigInt, { nullable: true });
+
+    try {
+      const addReportsRequest = new mssql.Request(trx);
+
+      for (const r of reports) {
+        let date = new Date(r.date || "2026");
+
+        if (!(date instanceof Date && !Number.isNaN(date.valueOf()))) date = new Date("2026");
+
+        table.rows.add(
+          date,
+          r.reason_call || " ",
+          r.job_description || " ",
+          r.root_cause || " ",
+          r.applicant?.id || null,
+          r.equipment?.id || null
+        );
+      }
+
+      await trx.begin();
+      await addReportsRequest.bulk(table);
+      await trx.commit();
+    } catch (error) {
+      console.error(error);
+      await trx.rollback();
+      throw error;
+    }
   }
 };
 
