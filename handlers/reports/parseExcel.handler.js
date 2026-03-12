@@ -45,7 +45,7 @@ export default async (ctx) => {
     throw new ServiceUnavailableError("Your request on parsing is processing");
   }
 
-  /** @param {ReportModel} report */
+  /** @param {ParsedReport} report */
   const onParseProgress = async (report) => sseClientCtx.res.sendSSEJson(report, "progress");
 
   const cancelAnalyzeCond = () => Boolean(sseClientCtx.local?.isClosed);

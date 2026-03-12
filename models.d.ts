@@ -1,4 +1,4 @@
-type ReportModel = {
+type ParsedReport = {
   date: string;
   equipment?:
     | string

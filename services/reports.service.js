@@ -2,6 +2,8 @@ import xlsx from "xlsx";
 import pLimit from "p-limit";
 import db from "#root/db.js";
 import mssql from "mssql";
+import { reportRepository } from "#repositories/index.js";
+// import * as utilsDate from "#utils/date.js";
 
 /** @import { reportsSchema } from "#schemas/report.schema.js" */
 /** @import { InferType } from "yup" */
@@ -22,13 +24,13 @@ export const reportsService = {
    * Читает файл Excel и возвращает данные о репорте в массиве
    *
    * @param {string} filepath
-   * @returns {ReportModel[]}
+   * @returns {ParsedReport[]}
    */
   parseExcelFile(filepath) {
     const workbook = xlsx.readFile(filepath, xlsxParseOptions);
     const sheet = workbook.Sheets[sheetName];
 
-    /** @type {ReportModel[]} */
+    /** @type {ParsedReport[]} */
     const reports = [];
 
     if (!sheet) throw new Error("Invalid reports workbook.");
@@ -77,9 +79,9 @@ export const reportsService = {
    * Проверяет отчет на наличие связей с БД АСУ и возвращает
    * этот отчет с устанновленными связями или без них
    *
-   * @param {ReportModel} report
+   * @param {ParsedReport} report
    * @param {() => boolean} cancelCondFn
-   * @returns {Promise<ReportModel>}
+   * @returns {Promise<ParsedReport>}
    */
   async checkReportLinks(report, cancelCondFn) {
     const executorSurnames = extractSurnamesFromExecutorField(report.executorNames);
@@ -141,9 +143,9 @@ export const reportsService = {
   /**
    * Проверяет связи отчетов с БД и возвращает результат
    *
-   * @param {ReportModel[]} reports
+   * @param {ParsedReport[]} reports
    * @param {() => boolean} cancelCondFn
-   * @param {(report: ReportModel) => Promise<void> | void} [progressCb]
+   * @param {(report: ParsedReport) => Promise<void> | void} [progressCb]
    */
   analyzeParseResult(reports, cancelCondFn, progressCb) {
     const limit = pLimit(10);
@@ -174,38 +176,29 @@ export const reportsService = {
    */
   async syncReportsWithDatabase(reports) {
     const trx = new mssql.Transaction(db);
-    const table = new mssql.Table("dbo.gpp_report_api_report");
+    const dbReports = await reportRepository.getAll();
 
-    table.create = false;
-
-    table.columns.add("date", mssql.Date, { nullable: false });
-    table.columns.add("reason_call", mssql.NVarChar(mssql.MAX), { nullable: false });
-    table.columns.add("job_description", mssql.NVarChar(mssql.MAX), { nullable: false });
-    table.columns.add("root_cause", mssql.NVarChar(mssql.MAX), { nullable: true });
-    table.columns.add("applicant_id", mssql.BigInt, { nullable: true });
-    table.columns.add("equipment_id", mssql.BigInt, { nullable: true });
+    /**
+     * 1. проверить на существование дубликатов и отфильтровать
+     * 2. начать транзакцию на множественную вставку отчетов
+     * 3. установить связь добавленных отчетов с исполнителями и завершить транзакцию
+     */
 
     try {
-      const addReportsRequest = new mssql.Request(trx);
-
-      for (const r of reports) {
-        let date = new Date(r.date || "2026");
-
-        if (!(date instanceof Date && !Number.isNaN(date.valueOf()))) date = new Date("2026");
-
-        table.rows.add(
-          date,
-          r.reason_call || " ",
-          r.job_description || " ",
-          r.root_cause || " ",
-          r.applicant?.id || null,
-          r.equipment?.id || null
-        );
-      }
-
       await trx.begin();
-      await addReportsRequest.bulk(table);
+      const countRows = await reportRepository.bulk(
+        reports.map((r) => ({
+          applicant_id: r.applicant?.id || null,
+          equipment_id: r.equipment?.id || null,
+          date: new Date("2026"),
+          job_description: r.job_description || "",
+          reason_call: r.reason_call || "",
+          root_cause: r.root_cause || ""
+        })),
+        trx
+      );
       await trx.commit();
+      return countRows;
     } catch (error) {
       console.error(error);
       await trx.rollback();

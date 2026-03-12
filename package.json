@@ -25,7 +25,11 @@
     "#root/*": "./*",
     "#handlers/*": "./handlers/*",
     "#services/*": "./services/*",
-    "#schemas/*": "./schemas/*"
+    "#schemas/*": "./schemas/*",
+    "#repositories/*": "./repositories/*",
+    "#tables/*": "./tables/*",
+    "#models/*": "./models/*",
+    "#utils/*": "./utils/*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

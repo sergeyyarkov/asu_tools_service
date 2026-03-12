@@ -14,6 +14,6 @@ export default async ({ res, data }) => {
     throw new BadRequestError(err.message);
   });
 
-  await reportsService.syncReportsWithDatabase(reports);
-  res.sendJson({ data: { message: "OK" } });
+  const rows = await reportsService.syncReportsWithDatabase(reports);
+  res.sendJson({ data: { rows } });
 };

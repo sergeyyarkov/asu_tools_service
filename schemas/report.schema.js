@@ -23,4 +23,4 @@ export const reportItemSchema = y.object({
   executors: y.array(y.object({ id: y.number(), fullname: y.string() })).required()
 });
 
-export const reportsSchema = y.object({ reports: y.array(reportItemSchema).required() }).required();
+export const reportsSchema = y.object({ reports: y.array(reportItemSchema).min(1).required() }).required();
