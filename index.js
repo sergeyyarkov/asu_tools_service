@@ -5,12 +5,14 @@ import { reportsHandlers } from "#handlers/index.js";
 import packageJson from "./package.json" with { type: "json" };
 import db from "./db.js";
 
+/** @import {HttpContext, HttpServerOptions} from "#root/http-server/types/http-server.js" */
+
 const SERVER_PORT = Number.parseInt(`${process.env.PORT || "3000"}`, 10);
 
-/** @type {Map<string, import("./http-server/types/http-server.js").HttpContext>} */
+/** @type {Map<string, HttpContext>} */
 export const clients = new Map();
 
-/** @type {import("./http-server/http-server.js").HttpServerOptions['cors']} */
+/** @type {HttpServerOptions['cors']} */
 const cors = {
   allow: "*",
   methods: "GET,POST,DELETE,UPDATE,PUT,PATCH",
