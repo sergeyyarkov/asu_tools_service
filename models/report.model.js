@@ -1,8 +1,10 @@
+import { BaseModel } from "./base.model.js";
+
 /** @import { ReportColumns } from "#tables/report.table.js" */
 
-export class ReportModel {
+export class ReportModel extends BaseModel {
   /**
-   * @type {ReportColumns['id'] | undefined}
+   * @type {ReportColumns['id']}
    */
   id;
 
@@ -37,9 +39,11 @@ export class ReportModel {
   equipment_id;
 
   /**
-   * @param {Omit<ReportColumns, 'id'>} columns
+   * @param {ReportColumns} columns
    */
   constructor(columns) {
+    super();
+    this.id = columns.id;
     this.date = columns.date;
     this.reason_call = columns.reason_call;
     this.job_description = columns.job_description;

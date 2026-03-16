@@ -1,27 +1,33 @@
 import sql from "mssql";
 import db from "#root/db.js";
 import { ReportModel } from "#models/index.js";
-import { ReportTable } from "#tables/index.js";
+import { ReportExecutorTable, ReportTable } from "#tables/index.js";
 
 /** @import { ReportColumns } from "#tables/report.table.js" */
 
 export const reportRepository = {
   async getAll() {
     const request = new sql.Request(db);
-    console.log(ReportTable.tableName);
+    const result = await request.query(`select * from dbo.${ReportTable.tableName};`);
+    const reports = ReportModel.fromRecordset(result.recordset);
 
-    const reports = await request.query(`select * from dbo.${ReportTable.tableName};`);
-    console.log(reports);
+    return reports;
+  },
 
-    return reports.recordset;
+  async getLast() {
+    const request = new sql.Request(db);
+    const result = await request.query(`select top 1 * from ${ReportTable.tableName} order by id desc`);
+    const report = ReportModel.fromRecordset(result.recordset);
+
+    return report[0];
   },
 
   /**
-   * @param {Omit<ReportColumns, 'id'>} entry
+   * @param {ReportColumns} entry
    */
   async create(entry) {
-    const report = new ReportModel(entry);
     const request = new sql.Request(db);
+    const report = new ReportModel(entry);
 
     request.input("date", ReportTable.getColumn("date"), report.date);
     request.input("reasonCall", ReportTable.getColumn("reason_call"), report.reason_call);
@@ -44,18 +50,45 @@ export const reportRepository = {
   },
 
   /**
-   * @param {Omit<ReportColumns, 'id'>[]} entries
+   * @param {Record<string | number, Array<string | number>>} links
+   * @param {sql.Transaction} [trx]
+   */
+  async attachExecutors(links, trx) {
+    const request = trx ? new sql.Request(trx) : new sql.Request(db);
+    const table = ReportExecutorTable.createInstance();
+
+    for (const [rId, executorIds] of Object.entries(links)) {
+      executorIds.forEach((eId) => table.rows.add(rId, eId));
+    }
+
+    await request.bulk(table);
+    return table.rows.length;
+  },
+
+  /**
+   * @param {ReportColumns[]} entries
    * @param {sql.Transaction} [trx]
    */
   async bulk(entries, trx) {
     const request = trx ? new sql.Request(trx) : new sql.Request(db);
     const table = ReportTable.createInstance();
+    const lastReportId = (await this.getLast()).id;
+    let nextAddId = Number.parseInt(lastReportId, 10);
 
-    for (const r of entries) {
-      table.rows.add(r.date, r.reason_call, r.job_description, r.root_cause, r.applicant_id, r.equipment_id);
+    for (const e of entries) {
+      table.rows.add(
+        ++nextAddId,
+        e.date,
+        e.reason_call,
+        e.job_description,
+        e.root_cause,
+        e.applicant_id,
+        e.equipment_id
+      );
     }
 
-    await request.bulk(table);
-    return table.rows.length;
+    const res = await request.bulk(table);
+
+    return res.rowsAffected;
   }
 };

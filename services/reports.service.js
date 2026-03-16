@@ -3,7 +3,7 @@ import pLimit from "p-limit";
 import db from "#root/db.js";
 import mssql from "mssql";
 import { reportRepository } from "#repositories/index.js";
-// import * as utilsDate from "#utils/date.js";
+import * as utilsDate from "#utils/date.js";
 
 /** @import { reportsSchema } from "#schemas/report.schema.js" */
 /** @import { InferType } from "yup" */
@@ -85,7 +85,7 @@ export const reportsService = {
    */
   async checkReportLinks(report, cancelCondFn) {
     const executorSurnames = extractSurnamesFromExecutorField(report.executorNames);
-    if (cancelCondFn()) return Promise.reject();
+    if (cancelCondFn()) return Promise.reject("Report check rejected");
 
     const equipment = await db.request()
       .query(`select t1.id, t1.name, t1.location_id, t3.name as base_location_name, t2.name as location_name, t2.base_location_id 
@@ -172,31 +172,50 @@ export const reportsService = {
   },
 
   /**
-   * @param {InferType<typeof reportsSchema>['reports']} reports
+   * @param {InferType<typeof reportsSchema>['reports']} inReports
    */
-  async syncReportsWithDatabase(reports) {
+  async syncReportsWithDatabase(inReports) {
     const trx = new mssql.Transaction(db);
-    const dbReports = await reportRepository.getAll();
+    const reports = await reportRepository.getAll();
 
     /**
-     * 1. проверить на существование дубликатов и отфильтровать
-     * 2. начать транзакцию на множественную вставку отчетов
      * 3. установить связь добавленных отчетов с исполнителями и завершить транзакцию
      */
+
+    /** Отфильтровывание дубликатов по полям. */
+    const filteredInReports = inReports.filter((inputR) => {
+      const isDub = reports.some((dbR) => {
+        return (
+          inputR.reason_call === dbR.reason_call &&
+          inputR.job_description === dbR.job_description &&
+          inputR.root_cause === dbR.root_cause &&
+          inputR.equipment?.id == dbR.equipment_id &&
+          inputR.applicant?.id == dbR.applicant_id
+        );
+      });
+      return !isDub;
+    });
+
+    if (filteredInReports.length === 0) return 0;
 
     try {
       await trx.begin();
       const countRows = await reportRepository.bulk(
-        reports.map((r) => ({
-          applicant_id: r.applicant?.id || null,
-          equipment_id: r.equipment?.id || null,
-          date: new Date("2026"),
-          job_description: r.job_description || "",
-          reason_call: r.reason_call || "",
-          root_cause: r.root_cause || ""
-        })),
+        filteredInReports.map((r) => {
+          const reportDate = new Date(r.date || "");
+          return {
+            applicant_id: r.applicant?.id || null,
+            equipment_id: r.equipment?.id || null,
+            date: utilsDate.isDateValid(reportDate) ? reportDate : new Date("2016-10-24"),
+            job_description: r.job_description || "",
+            reason_call: r.reason_call || "",
+            root_cause: r.root_cause || ""
+          };
+        }),
         trx
       );
+      // filteredInReports.map((r) => ({ [r.]: "" }));
+      // await reportRepository.attachExecutors()
       await trx.commit();
       return countRows;
     } catch (error) {
