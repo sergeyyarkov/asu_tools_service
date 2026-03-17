@@ -20,7 +20,7 @@ export const reportItemSchema = y.object({
   job_description: y.string(),
   root_cause: y.string(),
   applicant: y.object({ id: y.number(), name: y.string() }).nullable(),
-  executors: y.array(y.object({ id: y.number(), fullname: y.string() })).required()
+  executors: y.array(y.object({ id: y.number().required(), fullname: y.string().required() })).required()
 });
 
 export const reportsSchema = y.object({ reports: y.array(reportItemSchema).min(1).required() }).required();

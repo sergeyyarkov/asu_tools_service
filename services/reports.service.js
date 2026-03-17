@@ -175,12 +175,9 @@ export const reportsService = {
    * @param {InferType<typeof reportsSchema>['reports']} inReports
    */
   async syncReportsWithDatabase(inReports) {
+    const INVALID_DATE_FALLBACK = new Date("2016-10-24"); // дата для постановки вместо неверной. (колонка `date` в таблице имеет ограничение not null)
     const trx = new mssql.Transaction(db);
     const reports = await reportRepository.getAll();
-
-    /**
-     * 3. установить связь добавленных отчетов с исполнителями и завершить транзакцию
-     */
 
     /** Отфильтровывание дубликатов по полям. */
     const filteredInReports = inReports.filter((inputR) => {
@@ -198,15 +195,16 @@ export const reportsService = {
 
     if (filteredInReports.length === 0) return 0;
 
+    /** Добавление отчетов и связей с исполнителями к ним */
     try {
       await trx.begin();
-      const countRows = await reportRepository.bulk(
+      const bulkResult = await reportRepository.bulk(
         filteredInReports.map((r) => {
           const reportDate = new Date(r.date || "");
           return {
             applicant_id: r.applicant?.id || null,
             equipment_id: r.equipment?.id || null,
-            date: utilsDate.isDateValid(reportDate) ? reportDate : new Date("2016-10-24"),
+            date: utilsDate.isDateValid(reportDate) ? reportDate : INVALID_DATE_FALLBACK,
             job_description: r.job_description || "",
             reason_call: r.reason_call || "",
             root_cause: r.root_cause || ""
@@ -214,10 +212,14 @@ export const reportsService = {
         }),
         trx
       );
-      // filteredInReports.map((r) => ({ [r.]: "" }));
-      // await reportRepository.attachExecutors()
+
+      const executorsLinks = filteredInReports.map((r, i) => {
+        return Object.fromEntries([[`${bulkResult.addedRowIds[i]}`, r.executors.map((e) => e.id)]]);
+      });
+
+      await reportRepository.attachExecutors(executorsLinks, trx);
       await trx.commit();
-      return countRows;
+      return bulkResult.rowsAffected;
     } catch (error) {
       console.error(error);
       await trx.rollback();

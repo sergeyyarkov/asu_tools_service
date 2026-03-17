@@ -19,7 +19,7 @@ export const reportRepository = {
     const result = await request.query(`select top 1 * from ${ReportTable.tableName} order by id desc`);
     const report = ReportModel.fromRecordset(result.recordset);
 
-    return report[0];
+    return report.at(0);
   },
 
   /**
@@ -50,15 +50,17 @@ export const reportRepository = {
   },
 
   /**
-   * @param {Record<string | number, Array<string | number>>} links
+   * @param {Record<string, Array<string | number>>[]} links
    * @param {sql.Transaction} [trx]
    */
   async attachExecutors(links, trx) {
     const request = trx ? new sql.Request(trx) : new sql.Request(db);
     const table = ReportExecutorTable.createInstance();
 
-    for (const [rId, executorIds] of Object.entries(links)) {
-      executorIds.forEach((eId) => table.rows.add(rId, eId));
+    for (const report of Object.values(links)) {
+      for (const [rId, executorIds] of Object.entries(report)) {
+        executorIds.forEach((eId) => table.rows.add(rId, eId));
+      }
     }
 
     await request.bulk(table);
@@ -72,8 +74,8 @@ export const reportRepository = {
   async bulk(entries, trx) {
     const request = trx ? new sql.Request(trx) : new sql.Request(db);
     const table = ReportTable.createInstance();
-    const lastReportId = (await this.getLast()).id;
-    let nextAddId = Number.parseInt(lastReportId, 10);
+    const lastReportId = (await this.getLast())?.id || 0;
+    let nextAddId = typeof lastReportId === "string" ? Number.parseInt(lastReportId, 10) : lastReportId;
 
     for (const e of entries) {
       table.rows.add(
@@ -89,6 +91,6 @@ export const reportRepository = {
 
     const res = await request.bulk(table);
 
-    return res.rowsAffected;
+    return { rowsAffected: res.rowsAffected, addedRowIds: table.rows.map((r) => r[0]) };
   }
 };
