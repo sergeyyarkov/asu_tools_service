@@ -1,8 +1,7 @@
 import xlsx from "xlsx";
 import pLimit from "p-limit";
 import db from "#root/db.js";
-import mssql from "mssql";
-import { reportRepository } from "#repositories/index.js";
+import { reportRepository, UOW } from "#repositories/index.js";
 import * as utilsDate from "#utils/date.js";
 
 /** @import { reportsSchema } from "#schemas/report.schema.js" */
@@ -172,34 +171,42 @@ export const reportsService = {
   },
 
   /**
-   * @param {InferType<typeof reportsSchema>['reports']} inReports
+   * @param {InferType<typeof reportsSchema>} payload
    */
-  async syncReportsWithDatabase(inReports) {
+  async syncReportsWithDatabase(payload) {
     const INVALID_DATE_FALLBACK = new Date("2016-10-24"); // дата для постановки вместо неверной. (колонка `date` в таблице имеет ограничение not null)
-    const trx = new mssql.Transaction(db);
-    const reports = await reportRepository.getAll();
+    const { reports: inReports, deleteAllBeforeImport } = payload;
 
-    /** Отфильтровывание дубликатов по полям. */
-    const filteredInReports = inReports.filter((inputR) => {
-      const isDub = reports.some((dbR) => {
-        return (
-          inputR.reason_call === dbR.reason_call &&
-          inputR.job_description === dbR.job_description &&
-          inputR.root_cause === dbR.root_cause &&
-          inputR.equipment?.id == dbR.equipment_id &&
-          inputR.applicant?.id == dbR.applicant_id
-        );
+    /** @type {typeof payload['reports']} */
+    let unImportedReports = [];
+
+    if (!deleteAllBeforeImport) {
+      const reports = await reportRepository.getAll();
+
+      /** Отфильтровывание дубликатов по полям. */
+      unImportedReports = inReports.filter((inputR) => {
+        const isDub = reports.some((dbR) => {
+          return (
+            inputR.reason_call === dbR.reason_call &&
+            inputR.job_description === dbR.job_description &&
+            inputR.root_cause === dbR.root_cause &&
+            inputR.equipment?.id == dbR.equipment_id &&
+            inputR.applicant?.id == dbR.applicant_id
+          );
+        });
+        return !isDub;
       });
-      return !isDub;
-    });
 
-    if (filteredInReports.length === 0) return 0;
+      if (unImportedReports.length === 0) return 0;
+    } else {
+      await reportRepository.delAll();
+      unImportedReports = inReports;
+    }
 
     /** Добавление отчетов и связей с исполнителями к ним */
-    try {
-      await trx.begin();
+    const ret = await UOW.run(async () => {
       const bulkResult = await reportRepository.bulk(
-        filteredInReports.map((r) => {
+        unImportedReports.map((r) => {
           const reportDate = new Date(r.date || "");
           return {
             applicant_id: r.applicant?.id || null,
@@ -209,22 +216,19 @@ export const reportsService = {
             reason_call: r.reason_call || "",
             root_cause: r.root_cause || ""
           };
-        }),
-        trx
+        })
       );
 
-      const executorsLinks = filteredInReports.map((r, i) => {
+      const executorsLinks = unImportedReports.map((r, i) => {
         return Object.fromEntries([[`${bulkResult.addedRowIds[i]}`, r.executors.map((e) => e.id)]]);
       });
 
-      await reportRepository.attachExecutors(executorsLinks, trx);
-      await trx.commit();
+      await reportRepository.attachExecutors(executorsLinks);
+
       return bulkResult.rowsAffected;
-    } catch (error) {
-      console.error(error);
-      await trx.rollback();
-      throw error;
-    }
+    });
+
+    return ret;
   }
 };
 

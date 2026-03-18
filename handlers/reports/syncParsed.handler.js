@@ -10,10 +10,10 @@ import { reportsSchema } from "#schemas/report.schema.js";
  * @type {import("#root/http-server/types/http-server.js").HttpRouteHandler}
  */
 export default async ({ res, data }) => {
-  const { reports } = await reportsSchema.validate(data).catch((err) => {
+  const payload = await reportsSchema.validate(data).catch((err) => {
     throw new BadRequestError(err.message);
   });
 
-  const rows = await reportsService.syncReportsWithDatabase(reports);
+  const rows = await reportsService.syncReportsWithDatabase(payload);
   res.sendJson({ data: { rows } });
 };

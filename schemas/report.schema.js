@@ -23,4 +23,6 @@ export const reportItemSchema = y.object({
   executors: y.array(y.object({ id: y.number().required(), fullname: y.string().required() })).required()
 });
 
-export const reportsSchema = y.object({ reports: y.array(reportItemSchema).min(1).required() }).required();
+export const reportsSchema = y
+  .object({ reports: y.array(reportItemSchema).min(1).required(), deleteAllBeforeImport: y.boolean().required() })
+  .required();

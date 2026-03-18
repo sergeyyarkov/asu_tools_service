@@ -1,13 +1,12 @@
-import sql from "mssql";
-import db from "#root/db.js";
 import { ReportModel } from "#models/index.js";
 import { ReportExecutorTable, ReportTable } from "#tables/index.js";
+import { UOW } from "./index.js";
 
 /** @import { ReportColumns } from "#tables/report.table.js" */
 
 export const reportRepository = {
   async getAll() {
-    const request = new sql.Request(db);
+    const request = UOW.request;
     const result = await request.query(`select * from dbo.${ReportTable.tableName};`);
     const reports = ReportModel.fromRecordset(result.recordset);
 
@@ -15,18 +14,29 @@ export const reportRepository = {
   },
 
   async getLast() {
-    const request = new sql.Request(db);
+    const request = UOW.request;
     const result = await request.query(`select top 1 * from ${ReportTable.tableName} order by id desc`);
     const report = ReportModel.fromRecordset(result.recordset);
 
     return report.at(0);
   },
 
+  async delAll() {
+    await UOW.run(async () => {
+      const request = UOW.request;
+
+      await request.query(`delete from ${ReportExecutorTable.tableName};`);
+      await request.query(`delete from ${ReportTable.tableName};`);
+      await request.query(`DBCC CHECKIDENT ('${ReportExecutorTable.tableName}', RESEED, 0);`);
+      await request.query(`DBCC CHECKIDENT ('${ReportTable.tableName}', RESEED, 0);`);
+    });
+  },
+
   /**
    * @param {ReportColumns} entry
    */
   async create(entry) {
-    const request = new sql.Request(db);
+    const request = UOW.request;
     const report = new ReportModel(entry);
 
     request.input("date", ReportTable.getColumn("date"), report.date);
@@ -51,10 +61,9 @@ export const reportRepository = {
 
   /**
    * @param {Record<string, Array<string | number>>[]} links
-   * @param {sql.Transaction} [trx]
    */
-  async attachExecutors(links, trx) {
-    const request = trx ? new sql.Request(trx) : new sql.Request(db);
+  async attachExecutors(links) {
+    const request = UOW.request;
     const table = ReportExecutorTable.createInstance();
 
     for (const report of Object.values(links)) {
@@ -69,10 +78,9 @@ export const reportRepository = {
 
   /**
    * @param {ReportColumns[]} entries
-   * @param {sql.Transaction} [trx]
    */
-  async bulk(entries, trx) {
-    const request = trx ? new sql.Request(trx) : new sql.Request(db);
+  async bulk(entries) {
+    const request = UOW.request;
     const table = ReportTable.createInstance();
     const lastReportId = (await this.getLast())?.id || 0;
     let nextAddId = typeof lastReportId === "string" ? Number.parseInt(lastReportId, 10) : lastReportId;
