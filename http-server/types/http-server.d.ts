@@ -61,5 +61,5 @@ export interface HttpResponse {
   res: http.ServerResponse;
 }
 
-export type HttpRouteHandler = (ctx: HttpContext) => any;
+export type HttpRouteHandler = (ctx: HttpContext) => Promise<unknown>;
 export type HttpCreateServer = (options: HttpServerOptions) => HttpServer;

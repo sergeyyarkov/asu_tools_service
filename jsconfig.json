@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "checkJs": true,
     "allowJs": true,
     "lib": ["ESNext"],

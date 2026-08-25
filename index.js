@@ -1,7 +1,7 @@
 import path from "node:path";
 import fsp from "node:fs/promises";
 import { createServer } from "./http-server/index.js";
-import { reportsHandlers } from "#handlers/index.js";
+import { reportsHandlers, asuTableHandlers } from "#handlers/index.js";
 import packageJson from "./package.json" with { type: "json" };
 import db from "./db.js";
 
@@ -40,6 +40,7 @@ server.router.prefix("/api", (router) => {
     }
   });
   router.define("POST", "/reports_sync", reportsHandlers.syncParsedHandler);
+  router.define("GET", "/asu_table_xls", asuTableHandlers.getAsuTableHandler);
 });
 
 server.router.define("GET", "/", ({ res }) => res.sendText("Сервис инструментов таблицы АСУ."));
