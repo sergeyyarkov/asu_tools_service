@@ -65,9 +65,9 @@ export default async (ctx) => {
         `${system.baseLocationName} ${subsystem.locationName}`,
         hasDocLink ? { text: "Документация", hyperlink: subsystem?.docLink } : "",
         hasElectroPlan ? { text: "Электроплан", hyperlink: subsystem?.electrDiagLink } : "",
-        plcs.map((plc) => `${plc.name || ""}`).join("\n"),
-        hmis.map((hmi) => `${hmi.name || ""}`).join("\n"),
-        fgs.map((fg) => `${fg.name || ""}`).join("\n"),
+        plcs.map((plc) => `${plc.nameModel || ""}`).join("\n"),
+        hmis.map((hmi) => `${hmi.nameModel || ""}`).join("\n"),
+        fgs.map((fg) => `${fg.nameModel || ""}`).join("\n"),
         pcs.map((pc) => `${pc.name || ""}`).join("\n")
       ]);
 
