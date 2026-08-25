@@ -1,9 +1,25 @@
 import { UOW } from "./index.js";
+import sql from "mssql";
 
 export const equipmentRepository = {
-  async getAll() {
+  /**
+   * @param {{ filter?: { systemIds?: string[] | number[] } }} [options]
+   */
+  async getAll(options) {
     const request = UOW.request;
-    const result = await request.query(`
+    const systemIds = options?.filter?.systemIds;
+    const hasFilterBySystemIds = systemIds !== undefined && systemIds.length !== 0;
+
+    let whereClause = "";
+
+    if (hasFilterBySystemIds) {
+      const idsString = systemIds.map(Number).filter(Boolean).join(",");
+      request.input("sysIdsString", sql.VarChar, idsString);
+
+      whereClause = `WHERE systemsTbl.id IN (SELECT value FROM STRING_SPLIT(@sysIdsString, ','))`;
+    }
+
+    const query = `
        SELECT systemsTbl.id as id, 
               systemsTbl.name as name,
               baseLocTbl.name as baseLocationName,
@@ -51,8 +67,12 @@ export const equipmentRepository = {
                     where jt.systemlist_id = systemsTbl.id
                     FOR JSON PATH) as subsystems
             from asu_system_api_systemlist as systemsTbl
-            inner join asu_system_api_baselocation as baseLocTbl on systemsTbl.location_id = baseLocTbl.id FOR JSON PATH
-    `);
+            inner join asu_system_api_baselocation as baseLocTbl on systemsTbl.location_id = baseLocTbl.id
+            ${whereClause}
+            FOR JSON PATH
+    `;
+
+    const result = await request.query(query);
 
     const jsonStringData = result.recordset.map((row) => Object.values(row)[0]).join("");
 

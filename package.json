@@ -20,7 +20,6 @@
     "p-limit": "^7.3.0",
     "serialize-error": "^13.0.1",
     "xlsx": "^0.18.5",
-    "xlsx-js-style": "^1.2.0",
     "yup": "^1.7.1"
   },
   "imports": {

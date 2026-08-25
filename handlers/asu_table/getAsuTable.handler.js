@@ -11,7 +11,9 @@ import ExcelJS from "exceljs";
  * @type {HttpRouteHandler}
  */
 export default async (ctx) => {
-  const { res } = ctx;
+  const { res, searchParams } = ctx;
+
+  const systemIdsParam = searchParams.get("systemIds")?.split(",");
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Перечень систем", {
@@ -19,7 +21,7 @@ export default async (ctx) => {
   });
 
   const filename = encodeURIComponent("АСУ промплощадка.xlsx");
-  const equipmentData = await equipmentRepository.getAll();
+  const equipmentData = await equipmentRepository.getAll({ filter: { systemIds: systemIdsParam } });
 
   const excelData = [];
 
