@@ -1,10 +1,6 @@
 import sql from "mssql";
 import { BaseTable } from "./base.table.js";
 
-/**
- * @typedef {{ id?: number | string; date: Date; reason_call: string; job_description: string; root_cause: string | null; applicant_id: number | string | null; equipment_id: number | string | null; }} ReportColumns
- */
-
 export class ReportTable extends BaseTable {
   static tableName = "gpp_report_api_report";
   static table = new sql.Table(this.tableName);

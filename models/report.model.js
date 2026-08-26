@@ -1,6 +1,6 @@
 import { BaseModel } from "./base.model.js";
 
-/** @import { ReportColumns } from "#tables/report.table.js" */
+/** @import { ReportColumns } from "./types.js" */
 
 export class ReportModel extends BaseModel {
   /**

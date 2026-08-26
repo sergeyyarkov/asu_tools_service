@@ -1,9 +1,23 @@
 import { UOW } from "./index.js";
 import sql from "mssql";
 
+/**
+ * @typedef {{ name: string, nameModel?: string | null; }} EquipmentDbRecord;
+ *
+ * @typedef {{  id: string, name?: string,
+ *              docLink?: string | null, electrDiagLink?: string | null,
+ *              locationName?: string | null, plcs?: Array<EquipmentDbRecord>,
+ *              fgs?: Array<EquipmentDbRecord>, hmis: Array<EquipmentDbRecord>,
+ *              pcs?: Array<EquipmentDbRecord>
+ *          }} SubSystemDbRecord;
+ *
+ * @typedef {{ id: string, name: string, baseLocationName: string, subsystems: Array<SubSystemDbRecord> }} SystemDbRecord;
+ */
+
 export const equipmentRepository = {
   /**
    * @param {{ filter?: { systemIds?: string[] | number[] } }} [options]
+   * @returns {Promise<Array<SystemDbRecord>>}
    */
   async getAll(options) {
     const request = UOW.request;
