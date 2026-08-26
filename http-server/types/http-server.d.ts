@@ -34,7 +34,7 @@ export interface HttpRouter {
   define: (
     method: HttpMethod,
     pathname: string,
-    handler: (ctx: HttpContext) => void,
+    handler: (ctx: HttpContext) => Promise<unknown>,
     options?: HttpRouteOptions
   ) => void;
 }
