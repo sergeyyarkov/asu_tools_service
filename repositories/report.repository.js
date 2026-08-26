@@ -2,7 +2,7 @@ import { ReportModel } from "#models/index.js";
 import { ReportExecutorTable, ReportTable } from "#tables/index.js";
 import { UOW } from "./index.js";
 
-/** @import { ReportColumns } from "#tables/report.table.js" */
+/** @import { ReportColumns } from "#models/types.js" */
 
 export const reportRepository = {
   async getAll() {

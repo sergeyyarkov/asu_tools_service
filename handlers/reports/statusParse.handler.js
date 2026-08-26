@@ -1,14 +1,16 @@
 import { clients } from "#root/index.js";
 import crypto from "node:crypto";
 
+/** @import { HttpRouteHandler } from "#root/http-server/types/http-server.js" */
+
 /**
  * URL: /api/reports_status_parse
  * Method: GET
  * Description: Отправляет частями в формате JSON информацию о текущем статусе парсинга отчетов
  *
- * @type {import("#root/http-server/types/http-server.js").HttpRouteHandler}
+ * @type {HttpRouteHandler}
  */
-export default (ctx) => {
+export default async (ctx) => {
   const { res } = ctx;
   const clientId = crypto.randomUUID();
 
@@ -30,4 +32,6 @@ export default (ctx) => {
     clients.delete(clientId);
     res.res.end();
   });
+
+  return;
 };

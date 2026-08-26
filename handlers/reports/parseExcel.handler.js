@@ -3,6 +3,8 @@ import { clients } from "#root/index.js";
 import { reportsService } from "#services/index.js";
 import { serializeError } from "serialize-error";
 
+/** @import { HttpRouteHandler } from "#root/http-server/types/http-server.js" */
+
 const MAX_CONCURRENT_PARSE_CLIENT = Number.parseInt(process.env.REPORT_CONCURRENT_PARSE_CLIENTS || "3", 10);
 
 /**
@@ -11,7 +13,7 @@ const MAX_CONCURRENT_PARSE_CLIENT = Number.parseInt(process.env.REPORT_CONCURREN
  * Description: Принимает на вход файл отчетов в формате Excel, парсит его, проверяет связи с БД,
  *              отдает идентификатор на статус парсинга.
  *
- * @type {import("#root/http-server/types/http-server.js").HttpRouteHandler}
+ * @type {HttpRouteHandler}
  */
 export default async (ctx) => {
   const { res, searchParams } = ctx;
@@ -72,4 +74,6 @@ export default async (ctx) => {
   } else {
     throw new BadRequestError();
   }
+
+  return;
 };
