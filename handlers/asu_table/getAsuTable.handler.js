@@ -12,8 +12,11 @@ import { dbExporterService, XlsExporterAdapter } from "#root/services/dbExporter
 export default async (ctx) => {
   const { res, searchParams } = ctx;
   const systemIdsParam = searchParams.get("systemIds")?.split(",");
+  const subSystemIdsParam = searchParams.get("subSystemIds")?.split(",");
   const filename = encodeURIComponent("АСУ промплощадка.xlsx");
-  const exportResult = await dbExporterService.export(XlsExporterAdapter, { filter: { systemIds: systemIdsParam } });
+  const exportResult = await dbExporterService.export(XlsExporterAdapter, {
+    filter: { systemIds: systemIdsParam, subsystemIds: subSystemIdsParam }
+  });
 
   res.res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   res.res.setHeader("Content-Disposition", `attachment; filename=${filename}; filename*=UTF-8''${filename}`);

@@ -5,7 +5,7 @@ import { equipmentRepository } from "#root/repositories/equipment.repository.js"
 export const dbExporterService = {
   /**
    * @param { new () => ExporterAdapterInterface } Adapter
-   * @param {{ filter?: { systemIds?: number[] | string[] } }} options
+   * @param {{ filter?: { systemIds?: number[] | string[], subsystemIds?: number[] | string[] } }} options
    * */
   async export(Adapter, options) {
     const db = await equipmentRepository.getAll({ filter: options.filter });
